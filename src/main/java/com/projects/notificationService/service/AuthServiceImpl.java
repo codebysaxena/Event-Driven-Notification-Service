@@ -1,8 +1,9 @@
 package com.projects.notificationService.service;
 
+import com.projects.notificationService.constants.RedisKeys;
 import com.projects.notificationService.dto.*;
 import com.projects.notificationService.entity.NotificationPreference;
-import com.projects.notificationService.entity.Roles;
+import com.projects.notificationService.constants.Roles;
 import com.projects.notificationService.entity.User;
 import com.projects.notificationService.exception.InvalidTokenException;
 import com.projects.notificationService.exception.UserAlreadyExistsException;
@@ -121,7 +122,7 @@ public class AuthServiceImpl implements AuthService{
             long secondsRemaining = ChronoUnit.SECONDS.between(currDate.toInstant(), expirationDate.toInstant());
 
             if(secondsRemaining > 0){
-                String key = "blacklist:"+accessToken;
+                String key = RedisKeys.BLACKLIST + accessToken;
 
                 //blacklist the accessToken
                 redisService.set(

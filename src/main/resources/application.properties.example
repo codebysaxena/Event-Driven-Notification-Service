@@ -19,3 +19,7 @@ spring.redis.port=6379
 
 # Log config
 logging.level.org.hibernate.orm.queries=trace
+
+# Kafka config
+spring.kafka.bootstrap-servers=localhost:9092
+spring.kafka.listener.missing-topics-fatal=false

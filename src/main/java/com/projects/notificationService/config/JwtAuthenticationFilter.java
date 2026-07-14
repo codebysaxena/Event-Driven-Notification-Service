@@ -1,5 +1,6 @@
 package com.projects.notificationService.config;
 
+import com.projects.notificationService.constants.RedisKeys;
 import com.projects.notificationService.exception.TokenBlacklistedException;
 import com.projects.notificationService.service.CustomUserDetailsService;
 import com.projects.notificationService.service.JwtService;
@@ -47,7 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String userEmail = jwtService.extractUserEmail(token);
 
             if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null){
-                String key = "blacklist:"+token;
+                String key = RedisKeys.BLACKLIST + token;
                 if(redisService.get(key, String.class) != null){
                     throw new TokenBlacklistedException("Token has been blacklisted");
                 }
