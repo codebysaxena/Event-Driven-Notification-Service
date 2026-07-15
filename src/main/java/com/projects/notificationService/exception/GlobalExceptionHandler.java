@@ -117,8 +117,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(UsernameNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleException(
-            UsernameNotFoundException exc){
+    public ResponseEntity<ErrorResponse> handleException(UsernameNotFoundException exc){
 
         ErrorResponse error = new ErrorResponse();
 
@@ -129,6 +128,36 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(
                 error,
                 HttpStatus.UNAUTHORIZED
+        );
+    }
+
+    @ExceptionHandler(EventAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleException(EventAlreadyExistsException exc){
+
+        ErrorResponse error = new ErrorResponse();
+
+        error.setStatus(HttpStatus.CONFLICT.value());
+        error.setMessage("Event already published");
+        error.setTimestamp(LocalDateTime.now());
+
+        return new ResponseEntity<>(
+                error,
+                HttpStatus.CONFLICT
+        );
+    }
+
+    @ExceptionHandler(EventRateLimitException.class)
+    public ResponseEntity<ErrorResponse> handleException(EventRateLimitException exc){
+
+        ErrorResponse error = new ErrorResponse();
+
+        error.setStatus(HttpStatus.CONFLICT.value());
+        error.setMessage("Rate limit crossed");
+        error.setTimestamp(LocalDateTime.now());
+
+        return new ResponseEntity<>(
+                error,
+                HttpStatus.CONFLICT
         );
     }
 

@@ -11,6 +11,11 @@ import org.springframework.stereotype.Service;
 public class KafkaConsumerService {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumerService.class);
+    private final NotificationProcessingService notificationProcessingService;
+
+    public KafkaConsumerService(NotificationProcessingService notificationProcessingService) {
+        this.notificationProcessingService = notificationProcessingService;
+    }
 
     //Since we already configured group-id in application.properties, no need to add here again
     @KafkaListener(topics = KafkaTopics.NOTIFICATION_EVENTS)
@@ -22,5 +27,10 @@ public class KafkaConsumerService {
                 event.getType(),
                 event.getMessage()
         );
+        try {
+            notificationProcessingService.processEvent(event);
+        } catch (Exception e) {
+            log.error("Error processing consumed event: {}", e.getMessage(), e);
+        }
     }
 }
