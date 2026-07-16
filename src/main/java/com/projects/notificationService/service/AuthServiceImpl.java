@@ -11,6 +11,7 @@ import com.projects.notificationService.repository.NotificationPreferenceReposit
 import com.projects.notificationService.repository.UserRepository;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -31,6 +32,7 @@ public class AuthServiceImpl implements AuthService{
     private final RefreshTokenService refreshTokenService;
     private final RedisService redisService;
 
+    @Autowired
     public AuthServiceImpl(
             UserRepository userRepository,
             NotificationPreferenceRepository preferenceRepository,

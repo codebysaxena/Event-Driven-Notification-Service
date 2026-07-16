@@ -5,5 +5,6 @@ public enum DeliveryStatus {
     PROCESSING,
     SENT,
     FAILED,
-    SKIPPED
+    SKIPPED,
+    DEAD
 }

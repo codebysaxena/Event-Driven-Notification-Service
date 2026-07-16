@@ -11,6 +11,9 @@ import com.projects.notificationService.exception.EventRateLimitException;
 import com.projects.notificationService.repository.NotificationDeliveryRepository;
 import com.projects.notificationService.repository.NotificationRepository;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -22,7 +25,12 @@ public class NotificationProcessingServiceImpl implements NotificationProcessing
     private final NotificationPreferenceService NotificationPreferenceService;
     private final RedisService redisService;
     private final NotificationDeliveryService notificationDeliveryService;
-    
+
+    private static final Logger log = LoggerFactory.getLogger(
+                    NotificationProcessingServiceImpl.class
+            );
+
+    @Autowired
     public NotificationProcessingServiceImpl(NotificationRepository notificationRepository,
                                              NotificationPreferenceService NotificationPreferenceService,
                                              RedisService redisService,
@@ -55,13 +63,13 @@ public class NotificationProcessingServiceImpl implements NotificationProcessing
         //check in redis
         boolean isNew = redisService.isUniqueEvent(event, Duration.ofHours(24));
         if(!isNew){
-            System.out.println("Duplicate event ignored");
+            log.info("Duplicate event ignored: {}", event.getEventId());
             return;
         }
 
         //check in DB (if redis key got expired, beyond 24 hours)
         if(notificationRepository.existsByEventId(event.getEventId())){
-            System.out.println("Duplicate event ignored");
+            log.info("Duplicate event ignored: {}", event.getEventId());
             return;
         }
 
@@ -111,14 +119,44 @@ public class NotificationProcessingServiceImpl implements NotificationProcessing
             notificationDeliveryRepository.save(smsDelivery);
             notificationDeliveryRepository.save(pushDelivery);
 
-            if(emailDelivery.getStatus() != DeliveryStatus.SKIPPED)
-                notificationDeliveryService.processEmail(emailDelivery);
+            if(emailDelivery.getStatus() == DeliveryStatus.PENDING) {
+                try {
+                    notificationDeliveryService.processEmail(emailDelivery);
+                    emailDelivery.setStatus(DeliveryStatus.SENT);
+                    emailDelivery.setReason(null);
+                }
+                catch(Exception e){
+                    emailDelivery.setStatus(DeliveryStatus.FAILED);
+                    emailDelivery.setReason(e.getMessage());
+                }
+                notificationDeliveryRepository.save(emailDelivery);
+            }
 
-            if(smsDelivery.getStatus() != DeliveryStatus.SKIPPED)
-                notificationDeliveryService.processSms(smsDelivery);
+            if(smsDelivery.getStatus() == DeliveryStatus.PENDING) {
+                try {
+                    notificationDeliveryService.processSms(smsDelivery);
+                    smsDelivery.setStatus(DeliveryStatus.SENT);
+                    smsDelivery.setReason(null);
+                }
+                catch(Exception e){
+                    smsDelivery.setStatus(DeliveryStatus.FAILED);
+                    smsDelivery.setReason(e.getMessage());
+                }
+                notificationDeliveryRepository.save(smsDelivery);
+            }
 
-            if(pushDelivery.getStatus() != DeliveryStatus.SKIPPED)
-                notificationDeliveryService.processPush(pushDelivery);
+            if(pushDelivery.getStatus() == DeliveryStatus.PENDING) {
+                try {
+                    notificationDeliveryService.processPush(pushDelivery);
+                    pushDelivery.setStatus(DeliveryStatus.SENT);
+                    pushDelivery.setReason(null);
+                }
+                catch(Exception e){
+                    pushDelivery.setStatus(DeliveryStatus.FAILED);
+                    pushDelivery.setReason(e.getMessage());
+                }
+                notificationDeliveryRepository.save(pushDelivery);
+            }
 
             System.out.println("All Notification sent as per User preferences");
         } catch (Exception e) {

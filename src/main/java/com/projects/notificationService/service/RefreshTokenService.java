@@ -5,6 +5,7 @@ import com.projects.notificationService.entity.RefreshToken;
 import com.projects.notificationService.exception.InvalidTokenException;
 import com.projects.notificationService.exception.TokenNotFoundException;
 import com.projects.notificationService.repository.RefreshTokenRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ public class RefreshTokenService {
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
 
+    @Autowired
     public RefreshTokenService(CustomUserDetailsService userService, JwtService jwtService,
                                RefreshTokenRepository refreshTokenRepository) {
         this.userService = userService;
