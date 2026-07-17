@@ -1,0 +1,78 @@
+package com.projects.notificationService.service;
+
+import com.projects.notificationService.constants.OutboxConstants;
+import com.projects.notificationService.constants.OutboxEventStatus;
+import com.projects.notificationService.dto.DeliveryEvent;
+import com.projects.notificationService.entity.OutboxEvent;
+import com.projects.notificationService.repository.OutboxEventRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
+import java.util.List;
+
+@Service
+public class OutboxPublisherSchedulerService {
+    private final OutboxEventRepository outboxEventRepository;
+    private DeliveryEventProducerService deliveryEventProducerService;
+
+    private static final Logger log = LoggerFactory.
+            getLogger(OutboxPublisherSchedulerService.class);
+
+    @Autowired
+    public OutboxPublisherSchedulerService(OutboxEventRepository outboxEventRepository,
+                                           DeliveryEventProducerService deliveryEventProducerService){
+        this.outboxEventRepository = outboxEventRepository;
+        this.deliveryEventProducerService = deliveryEventProducerService;
+    }
+
+    private DeliveryEvent createDeliveryEvent(String payload){
+        try{
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jsonNode = objectMapper.readTree(payload);
+            DeliveryEvent event = new DeliveryEvent();
+
+            event.setDeliveryId(jsonNode.get("deliveryId").asLong());
+            return event;
+        }
+        catch(Exception e){
+            throw new RuntimeException("Invalid payload", e);
+        }
+    }
+
+    @Scheduled(fixedDelay = 60000)
+    public void publishPendingOutboxEvents(){
+        List<OutboxEventStatus> targetStatuses = List.of(OutboxEventStatus.PENDING, OutboxEventStatus.FAILED);
+        List<OutboxEvent> outboxEvents = outboxEventRepository.
+                findTop100ByStatusInAndRetryCountLessThanOrderByCreatedAtAsc
+                        (targetStatuses, OutboxConstants.MAX_RETRY_COUNT);
+
+        log.info("Publishing {} outbox events", outboxEvents.size());
+
+        for(OutboxEvent outboxEvent: outboxEvents){
+            outboxEvent.setRetryCount(outboxEvent.getRetryCount() + 1);
+            outboxEvent.setStatus(OutboxEventStatus.PROCESSING);
+            outboxEventRepository.save(outboxEvent);
+            log.info("publish pending deliveryEvent, id={}", outboxEvent.getId());
+
+            try{
+                String payload = outboxEvent.getPayload();
+                DeliveryEvent event = createDeliveryEvent(payload);
+                deliveryEventProducerService.publishDeliveryEvent(event);
+
+                outboxEvent.setStatus(OutboxEventStatus.SENT);
+            }
+            catch (Exception e){
+                if(outboxEvent.getRetryCount() >= OutboxConstants.MAX_RETRY_COUNT){
+                    outboxEvent.setStatus(OutboxEventStatus.DEAD);
+                }
+                else outboxEvent.setStatus(OutboxEventStatus.FAILED);
+            }
+            outboxEventRepository.save(outboxEvent);
+        }
+    }
+}

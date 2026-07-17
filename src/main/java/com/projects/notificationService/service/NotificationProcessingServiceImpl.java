@@ -4,17 +4,21 @@ import com.projects.notificationService.constants.DeliveryStatus;
 import com.projects.notificationService.constants.NotificationChannel;
 import com.projects.notificationService.constants.RedisKeys;
 import com.projects.notificationService.dto.NotificationEvent;
+import com.projects.notificationService.dto.OutboxEventPayload;
 import com.projects.notificationService.dto.PreferenceResponse;
 import com.projects.notificationService.entity.Notification;
 import com.projects.notificationService.entity.NotificationDelivery;
+import com.projects.notificationService.entity.OutboxEvent;
 import com.projects.notificationService.exception.EventRateLimitException;
 import com.projects.notificationService.repository.NotificationDeliveryRepository;
 import com.projects.notificationService.repository.NotificationRepository;
+import com.projects.notificationService.repository.OutboxEventRepository;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
 
@@ -25,6 +29,7 @@ public class NotificationProcessingServiceImpl implements NotificationProcessing
     private final NotificationPreferenceService NotificationPreferenceService;
     private final RedisService redisService;
     private final NotificationDeliveryService notificationDeliveryService;
+    private final OutboxEventRepository outboxEventRepository;
 
     private static final Logger log = LoggerFactory.getLogger(
                     NotificationProcessingServiceImpl.class
@@ -35,12 +40,14 @@ public class NotificationProcessingServiceImpl implements NotificationProcessing
                                              NotificationPreferenceService NotificationPreferenceService,
                                              RedisService redisService,
                                              NotificationDeliveryRepository notificationDeliveryRepository,
-                                             NotificationDeliveryService notificationDeliveryService){
+                                             NotificationDeliveryService notificationDeliveryService,
+                                             OutboxEventRepository outboxEventRepository){
         this.notificationRepository = notificationRepository;
         this.NotificationPreferenceService = NotificationPreferenceService;
         this.redisService = redisService;
         this.notificationDeliveryRepository = notificationDeliveryRepository;
         this.notificationDeliveryService = notificationDeliveryService;
+        this.outboxEventRepository = outboxEventRepository;
     }
 
     private NotificationDelivery createDelivery(
@@ -54,6 +61,23 @@ public class NotificationProcessingServiceImpl implements NotificationProcessing
         delivery.setStatus(DeliveryStatus.PENDING);
 
         return delivery;
+    }
+
+    private OutboxEvent createOutboxEvent(NotificationDelivery delivery){
+        try{
+            ObjectMapper mapper = new ObjectMapper();
+
+            String payload = mapper.writeValueAsString(
+                    new OutboxEventPayload(delivery.getId()));
+
+            OutboxEvent evt = new OutboxEvent();
+            evt.setEventType("DELIVERY_REQUESTED");
+            evt.setPayload(payload);
+            return evt;
+        }
+        catch(Exception e){
+            throw new RuntimeException("Failed to create outbox payload", e);
+        }
     }
 
     @Override
@@ -119,46 +143,20 @@ public class NotificationProcessingServiceImpl implements NotificationProcessing
             notificationDeliveryRepository.save(smsDelivery);
             notificationDeliveryRepository.save(pushDelivery);
 
-            if(emailDelivery.getStatus() == DeliveryStatus.PENDING) {
-                try {
-                    notificationDeliveryService.processEmail(emailDelivery);
-                    emailDelivery.setStatus(DeliveryStatus.SENT);
-                    emailDelivery.setReason(null);
-                }
-                catch(Exception e){
-                    emailDelivery.setStatus(DeliveryStatus.FAILED);
-                    emailDelivery.setReason(e.getMessage());
-                }
-                notificationDeliveryRepository.save(emailDelivery);
+            if(emailDelivery.getStatus() != DeliveryStatus.SKIPPED){
+                OutboxEvent emailEvent = createOutboxEvent(emailDelivery);
+                outboxEventRepository.save(emailEvent);
             }
 
-            if(smsDelivery.getStatus() == DeliveryStatus.PENDING) {
-                try {
-                    notificationDeliveryService.processSms(smsDelivery);
-                    smsDelivery.setStatus(DeliveryStatus.SENT);
-                    smsDelivery.setReason(null);
-                }
-                catch(Exception e){
-                    smsDelivery.setStatus(DeliveryStatus.FAILED);
-                    smsDelivery.setReason(e.getMessage());
-                }
-                notificationDeliveryRepository.save(smsDelivery);
+            if(smsDelivery.getStatus() != DeliveryStatus.SKIPPED){
+                OutboxEvent smsEvent = createOutboxEvent(smsDelivery);
+                outboxEventRepository.save(smsEvent);
             }
 
-            if(pushDelivery.getStatus() == DeliveryStatus.PENDING) {
-                try {
-                    notificationDeliveryService.processPush(pushDelivery);
-                    pushDelivery.setStatus(DeliveryStatus.SENT);
-                    pushDelivery.setReason(null);
-                }
-                catch(Exception e){
-                    pushDelivery.setStatus(DeliveryStatus.FAILED);
-                    pushDelivery.setReason(e.getMessage());
-                }
-                notificationDeliveryRepository.save(pushDelivery);
+            if(pushDelivery.getStatus() != DeliveryStatus.SKIPPED){
+                OutboxEvent pushEvent = createOutboxEvent(pushDelivery);
+                outboxEventRepository.save(pushEvent);
             }
-
-            System.out.println("All Notification sent as per User preferences");
         } catch (Exception e) {
             // Rollback fallback: If DB operations fail, remove Redis unique check key so the event can be retried
             redisService.delete(redisKey);

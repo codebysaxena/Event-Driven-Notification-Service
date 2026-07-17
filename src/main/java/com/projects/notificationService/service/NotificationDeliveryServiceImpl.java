@@ -26,9 +26,11 @@ public class NotificationDeliveryServiceImpl implements NotificationDeliveryServ
 
     @Override
     public void processSms(NotificationDelivery smsDelivery) {
+        //throw new RuntimeException("SMTP server down");
         try {
             // send
-            log.info("SMS notification sent successfully");
+//            log.info("SMS notification sent successfully");
+            throw new RuntimeException("SMTP server down");
         }
         catch(Exception e){
             log.error("SMS service having some issue");

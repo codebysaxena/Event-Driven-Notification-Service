@@ -3,6 +3,7 @@ package com.projects.notificationService.service;
 import com.projects.notificationService.constants.KafkaTopics;
 import com.projects.notificationService.dto.MessageResponse;
 import com.projects.notificationService.dto.NotificationEvent;
+import com.projects.notificationService.dto.OutboxEventPayload;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,6 @@ public class KafkaProducerService {
     }
 
     public MessageResponse publish(NotificationEvent event) {
-
         /*
         Here we use message key as a eventId
         Kafka routes records with the same key to the same partition.
