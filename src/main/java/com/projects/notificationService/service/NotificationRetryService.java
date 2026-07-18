@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -64,6 +65,29 @@ public class NotificationRetryService {
                 delivery.setReason(e.getMessage());
             }
             deliveryRepository.save(delivery);
+        }
+    }
+
+    @Scheduled(fixedDelay = 60000)
+    public void recoverStuckNotificationDelivery(){
+        LocalDateTime timeout = LocalDateTime.now().minusMinutes(5);
+        List<NotificationDelivery> deliveryList = deliveryRepository.
+                findByStatusAndUpdatedAtBefore(DeliveryStatus.PROCESSING, timeout);
+
+        log.info("Recovering {} stuck processing notifications", deliveryList.size());
+
+        for(NotificationDelivery delivery: deliveryList){
+            if(delivery.getRetryCount() >= NotificationRetryConstants.MAX_RETRY_COUNT){
+                delivery.setStatus(DeliveryStatus.DEAD);
+                delivery.setReason("Exceeded max retries while stuck in PROCESSING");
+            }
+            else{
+                delivery.setStatus(DeliveryStatus.FAILED);
+                delivery.setReason("Recovered from stuck PROCESSING state");
+            }
+            deliveryRepository.save(delivery);
+
+            log.info("Recovered stuck notification delivery id={}", delivery.getId());
         }
     }
 }

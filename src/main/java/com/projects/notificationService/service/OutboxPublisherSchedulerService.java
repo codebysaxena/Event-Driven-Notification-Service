@@ -1,5 +1,6 @@
 package com.projects.notificationService.service;
 
+import com.projects.notificationService.constants.NotificationRetryConstants;
 import com.projects.notificationService.constants.OutboxConstants;
 import com.projects.notificationService.constants.OutboxEventStatus;
 import com.projects.notificationService.dto.DeliveryEvent;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -64,6 +66,7 @@ public class OutboxPublisherSchedulerService {
                 DeliveryEvent event = createDeliveryEvent(payload);
                 deliveryEventProducerService.publishDeliveryEvent(event);
 
+                log.info("Outbox event published successfully. id={}", outboxEvent.getId());
                 outboxEvent.setStatus(OutboxEventStatus.SENT);
             }
             catch (Exception e){
@@ -73,6 +76,31 @@ public class OutboxPublisherSchedulerService {
                 else outboxEvent.setStatus(OutboxEventStatus.FAILED);
             }
             outboxEventRepository.save(outboxEvent);
+        }
+    }
+
+    @Scheduled(fixedDelay = 60000)
+    public void recoverStuckOutboxEvents(){
+        LocalDateTime timeout = LocalDateTime.now().minusMinutes(5);
+        List<OutboxEvent> outboxEventList = outboxEventRepository.
+                findByStatusAndUpdatedAtBefore(OutboxEventStatus.PROCESSING, timeout);
+
+        log.info("Recovering {} stuck processing OutboxEvents", outboxEventList.size());
+
+        for(OutboxEvent event: outboxEventList){
+            if(event.getRetryCount() >= NotificationRetryConstants.MAX_RETRY_COUNT){
+                event.setStatus(OutboxEventStatus.DEAD);
+            }
+            else{
+                event.setStatus(OutboxEventStatus.FAILED);
+            }
+            outboxEventRepository.save(event);
+
+            log.info(
+                    "Recovering stuck OutboxEvent id={}, retryCount={}",
+                    event.getId(),
+                    event.getRetryCount()
+            );
         }
     }
 }

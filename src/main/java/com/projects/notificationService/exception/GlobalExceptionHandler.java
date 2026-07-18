@@ -122,7 +122,7 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse();
 
         error.setStatus(HttpStatus.UNAUTHORIZED.value());
-        error.setMessage("Invalid email or password");
+        error.setMessage(exc.getMessage());
         error.setTimestamp(LocalDateTime.now());
 
         return new ResponseEntity<>(
@@ -137,7 +137,7 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse();
 
         error.setStatus(HttpStatus.CONFLICT.value());
-        error.setMessage("Event already published");
+        error.setMessage(exc.getMessage());
         error.setTimestamp(LocalDateTime.now());
 
         return new ResponseEntity<>(
@@ -152,12 +152,27 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse();
 
         error.setStatus(HttpStatus.CONFLICT.value());
-        error.setMessage("Rate limit crossed");
+        error.setMessage(exc.getMessage());
         error.setTimestamp(LocalDateTime.now());
 
         return new ResponseEntity<>(
                 error,
                 HttpStatus.CONFLICT
+        );
+    }
+
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleException(NotificationNotFoundException exc){
+
+        ErrorResponse error = new ErrorResponse();
+
+        error.setStatus(HttpStatus.NOT_FOUND.value());
+        error.setMessage(exc.getMessage());
+        error.setTimestamp(LocalDateTime.now());
+
+        return new ResponseEntity<>(
+                error,
+                HttpStatus.NOT_FOUND
         );
     }
 

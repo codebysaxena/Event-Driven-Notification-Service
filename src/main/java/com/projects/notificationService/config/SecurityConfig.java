@@ -65,6 +65,7 @@ public class SecurityConfig {
                                                    RedisService redisService) throws Exception{
         http.authorizeHttpRequests(config ->
                 config.requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated());
 
         http.exceptionHandling(ex -> ex
