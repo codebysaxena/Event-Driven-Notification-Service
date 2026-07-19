@@ -6,6 +6,8 @@ import com.projects.notificationService.dto.ChannelDashboardResponse;
 import com.projects.notificationService.dto.DashboardResponse;
 import com.projects.notificationService.dto.NotificationResponse;
 import com.projects.notificationService.dto.NotificationDetailedResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -13,13 +15,13 @@ public interface NotificationDashboardService {
     DashboardResponse getDashboard();
     ChannelDashboardResponse getDashboardChannelWise(NotificationChannel channel);
     NotificationDetailedResponse getDetailedNotificationInfo(Long id);
-    List<NotificationResponse> getNotificationsByChannel(NotificationChannel channel);
-    List<NotificationResponse> getNotificationsByStatus(DeliveryStatus status);
-    List<NotificationResponse> getNotificationsByChannelAndStatus
-            (NotificationChannel channel, DeliveryStatus status);
+    Page<NotificationResponse> getNotificationsByChannel(NotificationChannel channel, Pageable pageable);
+    Page<NotificationResponse> getNotificationsByStatus(DeliveryStatus status, Pageable pageable);
+    Page<NotificationResponse> getNotificationsByChannelAndStatus
+            (NotificationChannel channel, DeliveryStatus status, Pageable pageable);
 
-    List<NotificationResponse> getNotifications
-            (DeliveryStatus status, NotificationChannel channel);
+    Page<NotificationResponse> getNotifications
+            (DeliveryStatus status, NotificationChannel channel, int page, int size, String sortParam);
 
-    List<NotificationResponse> getAllNotifications();
+    Page<NotificationResponse> getAllNotifications(Pageable pageable);
 }

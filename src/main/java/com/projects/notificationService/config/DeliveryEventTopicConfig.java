@@ -16,4 +16,13 @@ public class DeliveryEventTopicConfig {
                 .replicas(1)
                 .build();
     }
+
+    @Bean
+    public NewTopic deliveryEventsDlqTopic(){
+        return TopicBuilder
+                .name(KafkaTopics.DELIVERY_DLQ)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
 }

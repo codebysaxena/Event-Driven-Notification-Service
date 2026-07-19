@@ -70,6 +70,10 @@ public class OutboxPublisherSchedulerService {
                 outboxEvent.setStatus(OutboxEventStatus.SENT);
             }
             catch (Exception e){
+                log.error("Failed to publish outbox event id={}. Attempt {} of {}. Error: {}",
+                        outboxEvent.getId(), outboxEvent.getRetryCount(),
+                        OutboxConstants.MAX_RETRY_COUNT, e.getMessage(), e);
+
                 if(outboxEvent.getRetryCount() >= OutboxConstants.MAX_RETRY_COUNT){
                     outboxEvent.setStatus(OutboxEventStatus.DEAD);
                 }

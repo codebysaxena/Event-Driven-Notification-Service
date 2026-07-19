@@ -28,7 +28,6 @@ public class NotificationProcessingServiceImpl implements NotificationProcessing
     private final NotificationDeliveryRepository notificationDeliveryRepository;
     private final NotificationPreferenceService NotificationPreferenceService;
     private final RedisService redisService;
-    private final NotificationDeliveryService notificationDeliveryService;
     private final OutboxEventRepository outboxEventRepository;
 
     private static final Logger log = LoggerFactory.getLogger(
@@ -40,13 +39,11 @@ public class NotificationProcessingServiceImpl implements NotificationProcessing
                                              NotificationPreferenceService NotificationPreferenceService,
                                              RedisService redisService,
                                              NotificationDeliveryRepository notificationDeliveryRepository,
-                                             NotificationDeliveryService notificationDeliveryService,
                                              OutboxEventRepository outboxEventRepository){
         this.notificationRepository = notificationRepository;
         this.NotificationPreferenceService = NotificationPreferenceService;
         this.redisService = redisService;
         this.notificationDeliveryRepository = notificationDeliveryRepository;
-        this.notificationDeliveryService = notificationDeliveryService;
         this.outboxEventRepository = outboxEventRepository;
     }
 
@@ -159,6 +156,8 @@ public class NotificationProcessingServiceImpl implements NotificationProcessing
             }
         } catch (Exception e) {
             // Rollback fallback: If DB operations fail, remove Redis unique check key so the event can be retried
+            log.error("Database write error during notification event processing. eventId={}, redisKey={}. Error: {}",
+                    event.getEventId(), redisKey, e.getMessage(), e);
             redisService.delete(redisKey);
             throw e; // Rethrow to rollback the transaction
         }

@@ -2,6 +2,8 @@ package com.projects.notificationService.service;
 
 import com.projects.notificationService.constants.RedisKeys;
 import com.projects.notificationService.dto.NotificationEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class RedisService {
+
+    private static final Logger log = LoggerFactory.getLogger(RedisService.class);
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
@@ -26,7 +30,7 @@ public class RedisService {
             return objectMapper.readValue(obj.toString(), entity);
         }
         catch (Exception e){
-            System.out.println("Exception: " + e);
+            log.error("Failed to read key: {} from Redis. Error: {}", key, e.getMessage(), e);
             return null;
         }
     }
@@ -37,7 +41,7 @@ public class RedisService {
             redisTemplate.opsForValue().set(key, json, ttl, TimeUnit.SECONDS);
         }
         catch (Exception e){
-            System.out.println("Exception: " + e);
+            log.error("Failed to set key: {} in Redis. Error: {}", key, e.getMessage(), e);
         }
     }
 
@@ -68,7 +72,7 @@ public class RedisService {
         } catch (Exception e) {
             // Fallback: If Redis crashes, log error and allow the event to process
             // (Fail-open strategy so your business logic doesn't stop working)
-            System.out.println("Redis connection failed during duplicate check for key: " + redisKey);
+            log.error("Redis connection failed during duplicate check for key: {}. Error: {}", redisKey, e.getMessage(), e);
             return true;
         }
     }
@@ -77,4 +81,3 @@ public class RedisService {
         redisTemplate.delete(key);
     }
 }
-

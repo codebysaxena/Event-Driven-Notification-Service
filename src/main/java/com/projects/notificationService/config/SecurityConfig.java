@@ -64,7 +64,7 @@ public class SecurityConfig {
                                                    CustomUserDetailsService userService,
                                                    RedisService redisService) throws Exception{
         http.authorizeHttpRequests(config ->
-                config.requestMatchers("/api/auth/**").permitAll()
+                config.requestMatchers("/api/auth/**", "/actuator/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated());
 

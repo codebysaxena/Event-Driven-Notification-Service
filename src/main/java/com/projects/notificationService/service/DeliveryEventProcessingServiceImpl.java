@@ -62,6 +62,6 @@ public class DeliveryEventProcessingServiceImpl implements DeliveryEventProcessi
         }
 
         helper(delivery);
-        System.out.println("All Notification sent as per User preferences");
+        log.info("Notification delivery processed successfully. deliveryId={}", delivery.getId());
     }
 }

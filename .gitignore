@@ -35,3 +35,4 @@ build/
 ### Local Configs ###
 /src/main/resources/application.properties
 /notification_service_script
+/explanation.md

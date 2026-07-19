@@ -11,6 +11,10 @@ import com.projects.notificationService.entity.NotificationDelivery;
 import com.projects.notificationService.exception.NotificationNotFoundException;
 import com.projects.notificationService.repository.NotificationDeliveryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -115,39 +119,66 @@ public class NotificationDashboardServiceImpl implements NotificationDashboardSe
     }
 
     @Override
-    public List<NotificationResponse> getNotificationsByChannel(NotificationChannel channel) {
-        List<NotificationDelivery> deliveryList = notificationDeliveryRepository.findByChannel(channel);
-        List<NotificationResponse> responseList = new ArrayList<>();
+    public Page<NotificationResponse> getNotificationsByChannel(NotificationChannel channel, Pageable pageable) {
+        Page<NotificationDelivery> deliveryList =
+                notificationDeliveryRepository.findByChannel(channel, pageable);
 
-        for(NotificationDelivery delivery: deliveryList){
-            responseList.add(mapToResponse(delivery));
-        }
-        return responseList;
+        Page<NotificationResponse> deliveryPage = deliveryList.map(this::mapToResponse);
+        return deliveryPage;
     }
 
     @Override
-    public List<NotificationResponse> getNotificationsByStatus(DeliveryStatus status) {
-        List<NotificationDelivery> deliveryList = notificationDeliveryRepository.findByStatus(status);
-        List<NotificationResponse> responseList = new ArrayList<>();
+    public Page<NotificationResponse> getNotificationsByStatus(DeliveryStatus status, Pageable pageable) {
+        Page<NotificationDelivery> deliveryList = notificationDeliveryRepository.
+                findByStatus(status, pageable);
 
-        for(NotificationDelivery delivery: deliveryList){
-            responseList.add(mapToResponse(delivery));
-        }
-        return responseList;
+        Page<NotificationResponse> deliveryPage = deliveryList.map(this::mapToResponse);
+        return deliveryPage;
     }
 
     @Override
-    public List<NotificationResponse> getNotificationsByChannelAndStatus(NotificationChannel channel, DeliveryStatus status) {
-        List<NotificationDelivery> deliveryList = notificationDeliveryRepository.findByChannelAndStatus(channel, status);
-        List<NotificationResponse> responseList = new ArrayList<>();
+    public Page<NotificationResponse> getNotificationsByChannelAndStatus(NotificationChannel channel, DeliveryStatus status,
+                                                                         Pageable paginationObject) {
+        Page<NotificationDelivery> deliveryList = notificationDeliveryRepository.
+                findByChannelAndStatus(channel, status, paginationObject);
 
-        for(NotificationDelivery delivery: deliveryList){
-            responseList.add(mapToResponse(delivery));
-        }
-        return responseList;
+        Page<NotificationResponse> deliveryPage = deliveryList.map(this::mapToResponse);
+        return deliveryPage;
     }
 
-     private NotificationResponse mapToResponse(NotificationDelivery delivery){
+    @Override
+    public Page<NotificationResponse> getAllNotifications(Pageable paginationObject) {
+        Page<NotificationDelivery> notificationPage = notificationDeliveryRepository.
+                findAll(paginationObject);
+
+        Page<NotificationResponse> deliveryPage = notificationPage.map(this::mapToResponse);
+
+        return deliveryPage;
+    }
+
+    @Override
+    public Page<NotificationResponse> getNotifications
+            (DeliveryStatus status, NotificationChannel channel,
+             int page, int size, String sortParam) {
+
+        Pageable paginationObject = buildPageable(page, size, sortParam);
+
+        if(status != null && channel != null){
+            return getNotificationsByChannelAndStatus(channel, status, paginationObject);
+        }
+
+        if(status != null){
+            return getNotificationsByStatus(status, paginationObject);
+        }
+
+        if(channel != null){
+            return getNotificationsByChannel(channel, paginationObject);
+        }
+
+        return getAllNotifications(paginationObject);
+    }
+
+    private NotificationResponse mapToResponse(NotificationDelivery delivery){
         Notification notification = delivery.getNotification();
         NotificationResponse response = new NotificationResponse();
 
@@ -162,34 +193,31 @@ public class NotificationDashboardServiceImpl implements NotificationDashboardSe
         return response;
     }
 
-    @Override
-    public List<NotificationResponse> getAllNotifications() {
-        List<NotificationDelivery> deliveryList = notificationDeliveryRepository.findAll();
+    private Pageable buildPageable(int page, int size, String sortParam){
+        if (page < 0) page = 0;
+        if (size <= 0 || size > 100) size = 20;
 
-        List<NotificationResponse> responseList = new ArrayList<>();
+        Sort sortObj;
+        if (sortParam != null && !sortParam.trim().isEmpty()) {
+            if (sortParam.contains(",")) {
+                String[] parts = sortParam.split(",");
+                String sortField = parts[0].trim();       // "createdAt"
+                String sortDirection = parts.length > 1 ? parts[1].trim() : "asc";
 
-        for(NotificationDelivery delivery : deliveryList){
-            responseList.add(mapToResponse(delivery));
-        }
-        return responseList;
-    }
-
-    @Override
-    public List<NotificationResponse> getNotifications
-            (DeliveryStatus status, NotificationChannel channel) {
-
-        if(status != null && channel != null){
-            return getNotificationsByChannelAndStatus(channel, status);
-        }
-
-        if(status != null){
-            return getNotificationsByStatus(status);
-        }
-
-        if(channel != null){
-            return getNotificationsByChannel(channel);
+                sortObj = sortDirection.equalsIgnoreCase("desc") ?
+                        Sort.by(sortField).descending() :
+                        Sort.by(sortField).ascending();
+            } else {
+                // Fallback if the user just passes a field name like "sort=createdAt"
+                sortObj = Sort.by(sortParam.trim()).ascending();
+            }
+        } else {
+            // Default sort if sortParam is null or empty
+            sortObj = Sort.by("createdAt").descending();
         }
 
-        return getAllNotifications();
+        // 0. Create Pageable object with page and size (sorting is optional)
+        Pageable paginationObject = PageRequest.of(page, size, sortObj);
+        return paginationObject;
     }
 }
