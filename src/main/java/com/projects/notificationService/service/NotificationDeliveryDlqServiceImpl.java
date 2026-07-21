@@ -22,7 +22,7 @@ public class NotificationDeliveryDlqServiceImpl implements NotificationDeliveryD
         dlq.setChannel(event.getChannel());
         dlq.setReason(event.getReason());
         dlq.setRetryCount(event.getRetryCount());
-        dlq.setDeadAt(event.getDeadAt());
+        dlq.setDeadAt(java.time.LocalDateTime.parse(event.getDeadAt()));
 
         dlqRepository.save(dlq);
     }

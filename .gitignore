@@ -36,3 +36,5 @@ build/
 /src/main/resources/application.properties
 /notification_service_script
 /explanation.md
+/docker_explanation.md
+/.env

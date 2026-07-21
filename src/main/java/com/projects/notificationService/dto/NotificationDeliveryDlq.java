@@ -1,19 +1,17 @@
 package com.projects.notificationService.dto;
 import com.projects.notificationService.constants.NotificationChannel;
 
-import java.time.LocalDateTime;
-
 public class NotificationDeliveryDlq {
     private Long deliveryId;
     private NotificationChannel channel;
     private String reason;
     private Integer retryCount;
-    private LocalDateTime deadAt;
+    private String deadAt;
 
     public NotificationDeliveryDlq() {}
 
     public NotificationDeliveryDlq(Long deliveryId, NotificationChannel channel, String reason,
-                                   Integer retryCount, LocalDateTime deadAt) {
+                                   Integer retryCount, String deadAt) {
         this.deliveryId = deliveryId;
         this.channel = channel;
         this.reason = reason;
@@ -53,11 +51,11 @@ public class NotificationDeliveryDlq {
         this.retryCount = retryCount;
     }
 
-    public LocalDateTime getDeadAt() {
+    public String getDeadAt() {
         return deadAt;
     }
 
-    public void setDeadAt(LocalDateTime deadAt) {
+    public void setDeadAt(String deadAt) {
         this.deadAt = deadAt;
     }
 }

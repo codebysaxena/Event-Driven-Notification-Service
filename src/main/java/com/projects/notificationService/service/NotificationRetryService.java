@@ -38,7 +38,7 @@ public class NotificationRetryService {
         deadEvent.setChannel(delivery.getChannel());
         deadEvent.setReason(delivery.getReason());
         deadEvent.setRetryCount(delivery.getRetryCount());
-        deadEvent.setDeadAt(LocalDateTime.now());
+        deadEvent.setDeadAt(LocalDateTime.now().toString());
         return deadEvent;
     }
 
