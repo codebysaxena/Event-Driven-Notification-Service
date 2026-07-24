@@ -14,7 +14,7 @@ public class NotificationDelivery {
     @Column(name = "id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "notification_id", nullable = false)
     private Notification notification;
 
