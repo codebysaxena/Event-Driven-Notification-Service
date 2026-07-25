@@ -1,6 +1,6 @@
 # 🔔 Smart Notification Service
 
-> A high-throughput, fault-tolerant, event-driven distributed notification platform built with **Spring Boot 3**, **Apache Kafka**, **Redis**, and **MySQL**, implementing the **Transactional Outbox Pattern** and **Dead Letter Queue (DLQ)**.
+> A high-throughput, fault-tolerant, event-driven distributed notification platform built with **Spring Boot 4**, **Apache Kafka**, **Redis**, and **MySQL**, implementing the **Transactional Outbox Pattern** and **Dead Letter Queue (DLQ)**.
 
 ---
 
@@ -55,7 +55,7 @@
 
 | Component | Technology | Description |
 | :--- | :--- | :--- |
-| **Framework** | Spring Boot 3.x / Java 25 | Core application framework & dependency injection |
+| **Framework** | Spring Boot 4.x / Java 25 | Core application framework & dependency injection |
 | **Messaging** | Apache Kafka (KRaft mode) | Distributed event streaming broker |
 | **Database** | MySQL 8 | Relational storage for entities, deliveries, and outbox logs |
 | **Caching** | Redis | In-memory cache for idempotency, rate limiting & token revocation |
