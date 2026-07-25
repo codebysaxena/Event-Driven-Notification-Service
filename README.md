@@ -23,7 +23,7 @@
                                                │ Consumed by Worker
                                                ▼
                        ┌─────────────────────────────────────────────────┐
-                       │   Notification Engine (Redis Deduplication/RL)   │
+                       │   Notification Engine (Redis Deduplication/RL)  │
                        └───────────────────────┬─────────────────────────┘
                                                │ Atomically Writes Entity & Outbox
                                                ▼
