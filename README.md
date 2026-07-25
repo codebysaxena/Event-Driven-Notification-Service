@@ -1,4 +1,4 @@
-# 🔔 Smart Notification Service
+# 🔔 Event-Driven-Notification-Service
 
 > A high-throughput, fault-tolerant, event-driven distributed notification platform built with **Spring Boot 4**, **Apache Kafka**, **Redis**, and **MySQL**, implementing the **Transactional Outbox Pattern** and **Dead Letter Queue (DLQ)**.
 
