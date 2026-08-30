@@ -7,8 +7,9 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-verify:
-    name: Build & Verify Java Application
+  # Stage 1: Automated Unit Testing (JUnit 5 & Mockito)
+  test-suite:
+    name: Run Automated Unit Tests (JUnit 5 / Mockito)
     runs-on: ubuntu-latest
 
     steps:
@@ -25,8 +26,28 @@ jobs:
       - name: Make Maven Wrapper Executable
         run: chmod +x ./mvnw
 
-      - name: Compile and Verify Application
-        run: ./mvnw clean compile
+      - name: Run Unit Tests
+        run: ./mvnw clean test
+
+  # Stage 2: Build & Package Production JAR
+  build-and-package:
+    name: Build & Package Production JAR
+    needs: test-suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 25 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Make Maven Wrapper Executable
+        run: chmod +x ./mvnw
 
       - name: Package Application Artifact (JAR)
         run: ./mvnw clean package -DskipTests
@@ -38,9 +59,10 @@ jobs:
           path: target/*.jar
           retention-days: 7
 
+  # Stage 3: Docker Container Image Validation
   docker-build:
     name: Build & Validate Docker Container Image
-    needs: build-and-verify
+    needs: build-and-package
     runs-on: ubuntu-latest
 
     steps:
